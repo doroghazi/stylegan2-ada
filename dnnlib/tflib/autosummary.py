@@ -25,7 +25,7 @@ Notes:
 
 from collections import OrderedDict
 import numpy as np
-import tensorflow as tf
+from .tfutil import tf
 from tensorboard import summary as summary_lib
 from tensorboard.plugins.custom_scalar import layout_pb2
 

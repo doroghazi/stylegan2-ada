@@ -8,9 +8,8 @@
 
 """Helper wrapper for a Tensorflow optimizer."""
 
-import platform
 import numpy as np
-import tensorflow as tf
+from .tfutil import tf
 
 from collections import OrderedDict
 from typing import List, Union
@@ -20,6 +19,14 @@ from . import tfutil
 from .. import util
 
 from .tfutil import TfExpression, TfExpressionEx
+
+try:
+    # TensorFlow 1.13
+    from tensorflow.python.ops import nccl_ops
+except:
+    # Older TensorFlow versions
+    import tensorflow.contrib.nccl as nccl_ops
+
 
 _collective_ops_warning_printed = False
 _collective_ops_group_key       = 831766147

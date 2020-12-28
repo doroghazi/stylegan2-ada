@@ -15,7 +15,7 @@ import uuid
 import sys
 import copy
 import numpy as np
-import tensorflow as tf
+from .tfutil import tf
 
 from collections import OrderedDict
 from typing import Any, List, Tuple, Union, Callable
@@ -429,6 +429,11 @@ class Network:
         static_kwargs = state["static_kwargs"]
         build_module_src = state["build_module_src"]
         build_func_name = state["build_func_name"]
+
+        # the workaround of tf1 to tf2 migration in network pickle file
+        #	replace 'import tensorflow as tf' in build_module_src
+        self._build_module_src = self._build_module_src.replace('import tensorflow as tf', 'import tensorflow.compat.v1 as tf\ntf.disable_v2_behavior()')
+
 
         # Create temporary module from the imported source code.
         module_name = "_tflib_network_import_" + uuid.uuid4().hex
