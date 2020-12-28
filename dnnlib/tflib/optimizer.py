@@ -25,7 +25,7 @@ try:
     from tensorflow.python.ops import nccl_ops
 except:
     # Older TensorFlow versions
-    import tensorflow.contrib.nccl as nccl_ops
+    # import tensorflow.contrib.nccl as nccl_ops
 
 
 _collective_ops_warning_printed = False

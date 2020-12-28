@@ -432,7 +432,7 @@ class Network:
 
         # the workaround of tf1 to tf2 migration in network pickle file
         #	replace 'import tensorflow as tf' in build_module_src
-        self._build_module_src = self._build_module_src.replace('import tensorflow as tf', 'import tensorflow.compat.v1 as tf\ntf.disable_v2_behavior()')
+        build_module_src =  build_module_src.replace('import tensorflow as tf', 'import tensorflow.compat.v1 as tf\ntf.disable_v2_behavior()')
 
 
         # Create temporary module from the imported source code.
