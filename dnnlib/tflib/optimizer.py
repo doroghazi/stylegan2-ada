@@ -1,4 +1,4 @@
-﻿# Copyright (c) 2020, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2020, NVIDIA CORPORATION.  All rights reserved.
 #
 # NVIDIA CORPORATION and its licensors retain all intellectual property
 # and proprietary rights in and to this software, related documentation
@@ -330,50 +330,50 @@ class Optimizer:
         _collective_ops_instance_key += 1
 
 
-# class SimpleAdam: needs upgrading
-#     """Simplified version of tf.train.AdamOptimizer that behaves identically when used with dnnlib.tflib.Optimizer."""
+class SimpleAdam:
+    """Simplified version of tf.train.AdamOptimizer that behaves identically when used with dnnlib.tflib.Optimizer."""
 
-#     def __init__(self, name="Adam", learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8):
-#         self.name = name
-#         self.learning_rate = learning_rate
-#         self.beta1 = beta1
-#         self.beta2 = beta2
-#         self.epsilon = epsilon
-#         self.all_state_vars = []
+    def __init__(self, name="Adam", learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8):
+        self.name = name
+        self.learning_rate = learning_rate
+        self.beta1 = beta1
+        self.beta2 = beta2
+        self.epsilon = epsilon
+        self.all_state_vars = []
 
-#     def variables(self):
-#         return self.all_state_vars
+    def variables(self):
+        return self.all_state_vars
 
-#     def compute_gradients(self, loss, var_list, gate_gradients=tf.train.Optimizer.GATE_NONE):
-#         assert gate_gradients == tf.train.Optimizer.GATE_NONE
-#         return list(zip(tf.gradients(loss, var_list), var_list))
+    def compute_gradients(self, loss, var_list, gate_gradients=tf.train.Optimizer.GATE_NONE):
+        assert gate_gradients == tf.train.Optimizer.GATE_NONE
+        return list(zip(tf.gradients(loss, var_list), var_list))
 
-#     def apply_gradients(self, grads_and_vars):
-#         with tf.name_scope(self.name):
-#             state_vars = []
-#             update_ops = []
+    def apply_gradients(self, grads_and_vars):
+        with tf.name_scope(self.name):
+            state_vars = []
+            update_ops = []
 
-#             # Adjust learning rate to deal with startup bias.
-#             with tf.control_dependencies(None):
-#                 b1pow_var = tf.Variable(dtype=tf.float32, initial_value=1, trainable=False)
-#                 b2pow_var = tf.Variable(dtype=tf.float32, initial_value=1, trainable=False)
-#                 state_vars += [b1pow_var, b2pow_var]
-#             b1pow_new = b1pow_var * self.beta1
-#             b2pow_new = b2pow_var * self.beta2
-#             update_ops += [tf.assign(b1pow_var, b1pow_new), tf.assign(b2pow_var, b2pow_new)]
-#             lr_new = self.learning_rate * tf.sqrt(1 - b2pow_new) / (1 - b1pow_new)
+            # Adjust learning rate to deal with startup bias.
+            with tf.control_dependencies(None):
+                b1pow_var = tf.Variable(dtype=tf.float32, initial_value=1, trainable=False)
+                b2pow_var = tf.Variable(dtype=tf.float32, initial_value=1, trainable=False)
+                state_vars += [b1pow_var, b2pow_var]
+            b1pow_new = b1pow_var * self.beta1
+            b2pow_new = b2pow_var * self.beta2
+            update_ops += [tf.assign(b1pow_var, b1pow_new), tf.assign(b2pow_var, b2pow_new)]
+            lr_new = self.learning_rate * tf.sqrt(1 - b2pow_new) / (1 - b1pow_new)
 
-#             # Construct ops to update each variable.
-#             for grad, var in grads_and_vars:
-#                 with tf.control_dependencies(None):
-#                     m_var = tf.Variable(dtype=tf.float32, initial_value=tf.zeros_like(var), trainable=False)
-#                     v_var = tf.Variable(dtype=tf.float32, initial_value=tf.zeros_like(var), trainable=False)
-#                     state_vars += [m_var, v_var]
-#                 m_new = self.beta1 * m_var + (1 - self.beta1) * grad
-#                 v_new = self.beta2 * v_var + (1 - self.beta2) * tf.square(grad)
-#                 var_delta = lr_new * m_new / (tf.sqrt(v_new) + self.epsilon)
-#                 update_ops += [tf.assign(m_var, m_new), tf.assign(v_var, v_new), tf.assign_sub(var, var_delta)]
+            # Construct ops to update each variable.
+            for grad, var in grads_and_vars:
+                with tf.control_dependencies(None):
+                    m_var = tf.Variable(dtype=tf.float32, initial_value=tf.zeros_like(var), trainable=False)
+                    v_var = tf.Variable(dtype=tf.float32, initial_value=tf.zeros_like(var), trainable=False)
+                    state_vars += [m_var, v_var]
+                m_new = self.beta1 * m_var + (1 - self.beta1) * grad
+                v_new = self.beta2 * v_var + (1 - self.beta2) * tf.square(grad)
+                var_delta = lr_new * m_new / (tf.sqrt(v_new) + self.epsilon)
+                update_ops += [tf.assign(m_var, m_new), tf.assign(v_var, v_new), tf.assign_sub(var, var_delta)]
 
-#             # Group everything together.
-#             self.all_state_vars += state_vars
-#             return tf.group(*update_ops)
+            # Group everything together.
+            self.all_state_vars += state_vars
+            return tf.group(*update_ops)
