@@ -430,12 +430,12 @@ def G_synthesis(
 
     # Layers for 4x4 resolution.
     y = None
-    with tf.variable_scope('4x4'):
-        with tf.variable_scope('Const'):
+    with tf.compat.v1.variable_scope('4x4'):
+        with tf.compat.v1.variable_scope('Const'):
             fmaps = fmap_const if fmap_const is not None else nf(1)
             x = tf.get_variable('const', shape=[1, fmaps, 4, 4], initializer=tf.initializers.random_normal())
             x = tf.tile(tf.cast(x, dtype), [tf.shape(dlatents_in)[0], 1, 1, 1])
-        with tf.variable_scope('Conv'):
+        with tf.compat.v1.variable_scope('Conv'):
             x = layer(x, layer_idx=0, fmaps=nf(1), kernel=3)
         if architecture == 'skip':
             y = torgb(x, y, 2)
