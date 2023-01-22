@@ -385,7 +385,7 @@ def G_synthesis(
         for layer_idx in range(num_layers - 1):
             res = (layer_idx + 5) // 2
             shape = [1, 1, 2**res, 2**res]
-            noise_inputs.append(tf.compat.v1.get_variable(f'noise{layer_idx}', shape=shape, initializer=tf.initializers.random.normal(), trainable=False))
+            noise_inputs.append(tf.compat.v1.get_variable(f'noise{layer_idx}', shape=shape, initializer=tf.initializers.RandomNormal(), trainable=False))
 
     # Single convolution layer with all the bells and whistles.
     def layer(x, layer_idx, fmaps, kernel, up=False):
@@ -433,7 +433,7 @@ def G_synthesis(
     with tf.compat.v1.variable_scope('4x4'):
         with tf.compat.v1.variable_scope('Const'):
             fmaps = fmap_const if fmap_const is not None else nf(1)
-            x = tf.compat.v1.get_variable('const', shape=[1, fmaps, 4, 4], initializer=tf.initializers.random.normal())
+            x = tf.compat.v1.get_variable('const', shape=[1, fmaps, 4, 4], initializer=tf.initializers.RandomNormal())
             x = tf.tile(tf.cast(x, dtype), [tf.shape(dlatents_in)[0], 1, 1, 1])
         with tf.compat.v1.variable_scope('Conv'):
             x = layer(x, layer_idx=0, fmaps=nf(1), kernel=3)
