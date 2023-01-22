@@ -109,7 +109,7 @@ def modulated_conv2d_layer(x, y, fmaps, kernel, up=False, down=False, demodulate
 
     # Demodulate.
     if demodulate:
-        d = tf.rsqrt(tf.reduce_sum(tf.square(ww), axis=[1,2,3]) + 1e-8) # [BO] Scaling factor.
+        d = tf.math.rsqrt(tf.reduce_sum(tf.square(ww), axis=[1,2,3]) + 1e-8) # [BO] Scaling factor.
         ww *= d[:, np.newaxis, np.newaxis, np.newaxis, :] # [BkkIO] Scale output feature maps.
 
     # Reshape/scale input.
@@ -133,7 +133,7 @@ def modulated_conv2d_layer(x, y, fmaps, kernel, up=False, down=False, demodulate
 # Normalize 2nd raw moment of the given activation tensor along specified axes.
 
 def normalize_2nd_moment(x, axis=1, eps=1e-8):
-    return x * tf.rsqrt(tf.reduce_mean(tf.square(x), axis=axis, keepdims=True) + eps)
+    return x * tf.math.rsqrt(tf.reduce_mean(tf.square(x), axis=axis, keepdims=True) + eps)
 
 #----------------------------------------------------------------------------
 # Minibatch standard deviation layer from the paper
@@ -173,9 +173,9 @@ def apply_spectral_norm(w, state_var='sn', iterations=1, eps=1e-8):
     u = u_var
     for _ in range(iterations):
         v = tf.matmul(u, w_mat, transpose_b=True)
-        v *= tf.rsqrt(tf.reduce_sum(tf.square(v)) + eps)
+        v *= tf.math.rsqrt(tf.reduce_sum(tf.square(v)) + eps)
         u = tf.matmul(v, w_mat)
-        sigma_inv = tf.rsqrt(tf.reduce_sum(tf.square(u)) + eps)
+        sigma_inv = tf.math.rsqrt(tf.reduce_sum(tf.square(u)) + eps)
         u *= sigma_inv
 
     with tf.control_dependencies([tf.assign(u_var, u)]):
