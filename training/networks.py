@@ -36,7 +36,7 @@ def get_weight(shape, gain=1, equalized_lr=True, lrmul=1, weight_var='weight', t
         runtime_coef = lrmul
 
     # Create variable.
-    init = tf.initializers.random.normal(0, init_std)
+    init = tf.initializers.RandomNormal(0, init_std)
     w = tf.compat.v1.get_variable(weight_var, shape=shape, initializer=init, trainable=trainable) * runtime_coef
     if use_spectral_norm:
         w = apply_spectral_norm(w, state_var=weight_var+'_sn')
