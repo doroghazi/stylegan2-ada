@@ -403,24 +403,24 @@ def G_synthesis(
     def block(x, res): # res = 3..resolution_log2
         x = tf.cast(x, 'float16' if res > resolution_log2 - num_fp16_res else dtype)
         t = x
-        with tf.variable_scope('Conv0_up'):
+        with tf.compat.v1.variable_scope('Conv0_up'):
             x = layer(x, layer_idx=res*2-5, fmaps=nf(res-1), kernel=3, up=True)
-        with tf.variable_scope('Conv1'):
+        with tf.compat.v1.variable_scope('Conv1'):
             x = layer(x, layer_idx=res*2-4, fmaps=nf(res-1), kernel=3)
         if architecture == 'resnet':
-            with tf.variable_scope('Skip'):
+            with tf.compat.v1.variable_scope('Skip'):
                 t = conv2d_layer(t, fmaps=nf(res-1), kernel=1, up=True, resample_kernel=resample_kernel)
                 x = (x + t) * (1 / np.sqrt(2))
         return x
 
     # Upsampling block.
     def upsample(y):
-        with tf.variable_scope('Upsample'):
+        with tf.compat.v1.variable_scope('Upsample'):
             return upsample_2d(y, k=resample_kernel)
 
     # ToRGB block.
     def torgb(x, y, res): # res = 2..resolution_log2
-        with tf.variable_scope('ToRGB'):
+        with tf.compat.v1.variable_scope('ToRGB'):
             t = modulated_conv2d_layer(x, dlatents_in[:, res*2-3], fmaps=num_channels, kernel=1, demodulate=False, fused_modconv=fused_modconv)
             t = apply_bias_act(t, clamp=conv_clamp)
             t = tf.cast(t, dtype)
@@ -442,7 +442,7 @@ def G_synthesis(
 
     # Layers for >=8x8 resolutions.
     for res in range(3, resolution_log2 + 1):
-        with tf.variable_scope(f'{2**res}x{2**res}'):
+        with tf.compat.v1.variable_scope(f'{2**res}x{2**res}'):
             x = block(x, res)
             if architecture == 'skip':
                 y = upsample(y)
@@ -514,11 +514,11 @@ def D_main(
     # Label embedding and mapping.
     if label_size > 0:
         y = labels_in
-        with tf.variable_scope('LabelEmbed'):
+        with tf.compat.v1.variable_scope('LabelEmbed'):
             y = apply_bias_act(dense_layer(y, fmaps=mapping_fmaps))
             y = normalize_2nd_moment(y)
         for idx in range(mapping_layers):
-            with tf.variable_scope(f'Mapping{idx}'):
+            with tf.compat.v1.variable_scope(f'Mapping{idx}'):
                 y = apply_bias_act(dense_layer(y, fmaps=mapping_fmaps, lrmul=mapping_lrmul), act=act, lrmul=mapping_lrmul)
         labels_in = y
 
@@ -541,7 +541,7 @@ def D_main(
     pagan_bits = None
     pagan_signs = None
     if use_pagan:
-        with tf.variable_scope('PAGAN'):
+        with tf.compat.v1.variable_scope('PAGAN'):
             idx = tf.range(pagan_num, dtype=tf.float32)
             active = (augment_strength * pagan_num - idx - 1) / max(pagan_fade, 1e-8) + 1
             prob = tf.clip_by_value(active[np.newaxis, :], 0, 1) * 0.5
@@ -556,7 +556,7 @@ def D_main(
             t = tf.cast(y, 'float16' if res > resolution_log2 - num_fp16_res else dtype)
             t = adrop(conv2d_layer(t, fmaps=nf(res-1), kernel=1, trainable=trainable))
             if pagan_bits is not None:
-                with tf.variable_scope('PAGAN'):
+                with tf.compat.v1.variable_scope('PAGAN'):
                     t += dense_layer(tf.cast(pagan_bits, t.dtype), fmaps=nf(res-1), trainable=trainable)[:, :, np.newaxis, np.newaxis]
             t = apply_bias_act(t, act=act, clamp=conv_clamp, trainable=trainable)
             if x is not None:
@@ -567,14 +567,14 @@ def D_main(
     def block(x, res): # res = 2..resolution_log2
         x = tf.cast(x, 'float16' if res > resolution_log2 - num_fp16_res else dtype)
         t = x
-        with tf.variable_scope('Conv0'):
+        with tf.compat.v1.variable_scope('Conv0'):
             trainable = is_next_layer_trainable()
             x = apply_bias_act(adrop(conv2d_layer(x, fmaps=nf(res-1), kernel=3, trainable=trainable, use_spectral_norm=use_spectral_norm)), act=act, clamp=conv_clamp, trainable=trainable)
-        with tf.variable_scope('Conv1_down'):
+        with tf.compat.v1.variable_scope('Conv1_down'):
             trainable = is_next_layer_trainable()
             x = apply_bias_act(adrop(conv2d_layer(x, fmaps=nf(res-2), kernel=3, down=True, resample_kernel=resample_kernel, trainable=trainable, use_spectral_norm=use_spectral_norm)), act=act, clamp=conv_clamp, trainable=trainable)
         if architecture == 'resnet':
-            with tf.variable_scope('Skip'):
+            with tf.compat.v1.variable_scope('Skip'):
                 trainable = is_next_layer_trainable()
                 t = adrop(conv2d_layer(t, fmaps=nf(res-2), kernel=1, down=True, resample_kernel=resample_kernel, trainable=trainable))
                 x = (x + t) * (1 / np.sqrt(2))
@@ -582,14 +582,14 @@ def D_main(
 
     # Downsampling block.
     def downsample(y):
-        with tf.variable_scope('Downsample'):
+        with tf.compat.v1.variable_scope('Downsample'):
             return downsample_2d(y, k=resample_kernel)
 
     # Layers for >=8x8 resolutions.
     x = None
     y = images_in
     for res in range(resolution_log2, 2, -1):
-        with tf.variable_scope(f'{2**res}x{2**res}'):
+        with tf.compat.v1.variable_scope(f'{2**res}x{2**res}'):
             if architecture == 'skip' or res == resolution_log2:
                 x = fromrgb(x, y, res)
             x = block(x, res)
@@ -597,22 +597,22 @@ def D_main(
                 y = downsample(y)
 
     # Layers for 4x4 resolution.
-    with tf.variable_scope('4x4'):
+    with tf.compat.v1.variable_scope('4x4'):
         if architecture == 'skip':
             x = fromrgb(x, y, 2)
         x = tf.cast(x, dtype)
         if mbstd_num_features > 0:
-            with tf.variable_scope('MinibatchStddev'):
+            with tf.compat.v1.variable_scope('MinibatchStddev'):
                 x = minibatch_stddev_layer(x, mbstd_group_size, mbstd_num_features)
-        with tf.variable_scope('Conv'):
+        with tf.compat.v1.variable_scope('Conv'):
             trainable = is_next_layer_trainable()
             x = apply_bias_act(adrop(conv2d_layer(x, fmaps=nf(1), kernel=3, trainable=trainable, use_spectral_norm=use_spectral_norm)), act=act, clamp=conv_clamp, trainable=trainable)
-        with tf.variable_scope('Dense0'):
+        with tf.compat.v1.variable_scope('Dense0'):
             trainable = is_next_layer_trainable()
             x = apply_bias_act(adrop(dense_layer(x, fmaps=nf(0), trainable=trainable)), act=act, trainable=trainable)
 
     # Output layer (always trainable).
-    with tf.variable_scope('Output'):
+    with tf.compat.v1.variable_scope('Output'):
         if label_size > 0:
             assert score_max == 1
             x = apply_bias_act(dense_layer(x, fmaps=mapping_fmaps))
