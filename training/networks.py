@@ -36,7 +36,7 @@ def get_weight(shape, gain=1, equalized_lr=True, lrmul=1, weight_var='weight', t
         runtime_coef = lrmul
 
     # Create variable.
-    init = tf.initializers.random_normal(0, init_std)
+    init = tf.initializers.random.normal(0, init_std)
     w = tf.compat.v1.get_variable(weight_var, shape=shape, initializer=init, trainable=trainable) * runtime_coef
     if use_spectral_norm:
         w = apply_spectral_norm(w, state_var=weight_var+'_sn')
@@ -168,7 +168,7 @@ def minibatch_stddev_layer(x, group_size=None, num_new_features=1):
 def apply_spectral_norm(w, state_var='sn', iterations=1, eps=1e-8):
     fmaps = w.shape[-1].value
     w_mat = tf.reshape(w, [-1, fmaps])
-    u_var = tf.compat.v1.get_variable(state_var, shape=[1,fmaps], initializer=tf.initializers.random_normal(), trainable=False)
+    u_var = tf.compat.v1.get_variable(state_var, shape=[1,fmaps], initializer=tf.initializers.random.normal(), trainable=False)
 
     u = u_var
     for _ in range(iterations):
@@ -249,13 +249,13 @@ def G_main(
     # Perform style mixing regularization.
     if style_mixing_prob is not None:
         with tf.variable_scope('StyleMix'):
-            latents2 = tf.random_normal(tf.shape(latents_in))
+            latents2 = tf.random.normal(tf.shape(latents_in))
             dlatents2 = components.mapping.get_output_for(latents2, labels_in, is_training=is_training, **kwargs)
             dlatents2 = tf.cast(dlatents2, tf.float32)
             layer_idx = np.arange(num_layers)[np.newaxis, :, np.newaxis]
             mixing_cutoff = tf.cond(
-                tf.random_uniform([], 0.0, 1.0) < style_mixing_prob,
-                lambda: tf.random_uniform([], 1, num_layers, dtype=tf.int32),
+                tf.random.uniform([], 0.0, 1.0) < style_mixing_prob,
+                lambda: tf.random.uniform([], 1, num_layers, dtype=tf.int32),
                 lambda: num_layers)
             dlatents = tf.where(tf.broadcast_to(layer_idx < mixing_cutoff, tf.shape(dlatents)), dlatents, dlatents2)
 
@@ -385,14 +385,14 @@ def G_synthesis(
         for layer_idx in range(num_layers - 1):
             res = (layer_idx + 5) // 2
             shape = [1, 1, 2**res, 2**res]
-            noise_inputs.append(tf.compat.v1.get_variable(f'noise{layer_idx}', shape=shape, initializer=tf.initializers.random_normal(), trainable=False))
+            noise_inputs.append(tf.compat.v1.get_variable(f'noise{layer_idx}', shape=shape, initializer=tf.initializers.random.normal(), trainable=False))
 
     # Single convolution layer with all the bells and whistles.
     def layer(x, layer_idx, fmaps, kernel, up=False):
         x = modulated_conv2d_layer(x, dlatents_in[:, layer_idx], fmaps=fmaps, kernel=kernel, up=up, resample_kernel=resample_kernel, fused_modconv=fused_modconv)
         if use_noise:
             if randomize_noise:
-                noise = tf.random_normal([tf.shape(x)[0], 1, x.shape[2], x.shape[3]], dtype=x.dtype)
+                noise = tf.random.normal([tf.shape(x)[0], 1, x.shape[2], x.shape[3]], dtype=x.dtype)
             else:
                 noise = tf.cast(noise_inputs[layer_idx], x.dtype)
             noise_strength = tf.compat.v1.get_variable('noise_strength', shape=[], initializer=tf.initializers.zeros())
@@ -433,7 +433,7 @@ def G_synthesis(
     with tf.compat.v1.variable_scope('4x4'):
         with tf.compat.v1.variable_scope('Const'):
             fmaps = fmap_const if fmap_const is not None else nf(1)
-            x = tf.compat.v1.get_variable('const', shape=[1, fmaps, 4, 4], initializer=tf.initializers.random_normal())
+            x = tf.compat.v1.get_variable('const', shape=[1, fmaps, 4, 4], initializer=tf.initializers.random.normal())
             x = tf.tile(tf.cast(x, dtype), [tf.shape(dlatents_in)[0], 1, 1, 1])
         with tf.compat.v1.variable_scope('Conv'):
             x = layer(x, layer_idx=0, fmaps=nf(1), kernel=3)
@@ -526,7 +526,7 @@ def D_main(
     def adrop(x):
         if adaptive_dropout != 0:
             s = [tf.shape(x)[0], x.shape[1]] + [1] * (x.shape.rank - 2)
-            x *= tf.cast(tf.exp(tf.random_normal(s) * (augment_strength * adaptive_dropout)), x.dtype)
+            x *= tf.cast(tf.exp(tf.random.normal(s) * (augment_strength * adaptive_dropout)), x.dtype)
         return x
 
     # Freeze-D.
@@ -545,7 +545,7 @@ def D_main(
             idx = tf.range(pagan_num, dtype=tf.float32)
             active = (augment_strength * pagan_num - idx - 1) / max(pagan_fade, 1e-8) + 1
             prob = tf.clip_by_value(active[np.newaxis, :], 0, 1) * 0.5
-            rnd = tf.random_uniform([tf.shape(images_in)[0], pagan_num])
+            rnd = tf.random.uniform([tf.shape(images_in)[0], pagan_num])
             pagan_bits = tf.cast(rnd < prob, dtype=tf.float32)
             pagan_signs = tf.reduce_prod(1 - pagan_bits * 2, axis=1, keepdims=True)
 
