@@ -240,7 +240,7 @@ def G_main(
     # Update moving average of W.
     dlatent_avg = tf.compat.v1.get_variable('dlatent_avg', shape=[dlatent_size], initializer=tf.initializers.zeros(), trainable=False)
     if dlatent_avg_beta is not None:
-        with tf.variable_scope('DlatentAvg'):
+        with tf.compat.v1.variable_scope('DlatentAvg'):
             batch_avg = tf.reduce_mean(dlatents[:, 0], axis=0)
             update_op = tf.assign(dlatent_avg, tflib.lerp(batch_avg, dlatent_avg, dlatent_avg_beta))
             with tf.control_dependencies([update_op]):
@@ -248,7 +248,7 @@ def G_main(
 
     # Perform style mixing regularization.
     if style_mixing_prob is not None:
-        with tf.variable_scope('StyleMix'):
+        with tf.compat.v1.variable_scope('StyleMix'):
             latents2 = tf.random.normal(tf.shape(latents_in))
             dlatents2 = components.mapping.get_output_for(latents2, labels_in, is_training=is_training, **kwargs)
             dlatents2 = tf.cast(dlatents2, tf.float32)
@@ -261,7 +261,7 @@ def G_main(
 
     # Apply truncation.
     if truncation_psi is not None:
-        with tf.variable_scope('Truncation'):
+        with tf.compat.v1.variable_scope('Truncation'):
             layer_idx = np.arange(num_layers)[np.newaxis, :, np.newaxis]
             layer_psi = np.ones(layer_idx.shape, dtype=np.float32)
             if truncation_cutoff is None:
@@ -310,12 +310,12 @@ def G_mapping(
 
     # Normalize latents.
     if normalize_latents:
-        with tf.variable_scope('Normalize'):
+        with tf.compat.v1.variable_scope('Normalize'):
             x = normalize_2nd_moment(x)
 
     # Embed labels, normalize, and concatenate with latents.
     if label_size > 0:
-        with tf.variable_scope('LabelEmbed'):
+        with tf.compat.v1.variable_scope('LabelEmbed'):
             fmaps = label_fmaps if label_fmaps is not None else latent_size
             y = labels_in
             y = apply_bias_act(dense_layer(y, fmaps=fmaps))
@@ -324,13 +324,13 @@ def G_mapping(
 
     # Mapping layers.
     for layer_idx in range(mapping_layers):
-        with tf.variable_scope(f'Dense{layer_idx}'):
+        with tf.compat.v1.variable_scope(f'Dense{layer_idx}'):
             fmaps = mapping_fmaps if mapping_fmaps is not None and layer_idx < mapping_layers - 1 else dlatent_size
             x = apply_bias_act(dense_layer(x, fmaps=fmaps, lrmul=mapping_lrmul), act=mapping_nonlinearity, lrmul=mapping_lrmul)
 
     # Broadcast.
     if dlatent_broadcast is not None:
-        with tf.variable_scope('Broadcast'):
+        with tf.compat.v1.variable_scope('Broadcast'):
             x = tf.tile(x[:, np.newaxis], [1, dlatent_broadcast, 1])
 
     # Output.
@@ -551,7 +551,7 @@ def D_main(
 
     # FromRGB block.
     def fromrgb(x, y, res): # res = 2..resolution_log2
-        with tf.variable_scope('FromRGB'):
+        with tf.compat.v1.variable_scope('FromRGB'):
             trainable = is_next_layer_trainable()
             t = tf.cast(y, 'float16' if res > resolution_log2 - num_fp16_res else dtype)
             t = adrop(conv2d_layer(t, fmaps=nf(res-1), kernel=1, trainable=trainable))
